@@ -67,7 +67,7 @@ def boaselenium2():
 #### Read in Wells Fargo Data manually and format
 # Read Wells Fargo Spending Report CSV
 statement = pd.read_csv(
-    "/Users/zacharybarkley/PycharmProjects/pythonProject/WellsFargoStatements/Statements/All_Payment_Methods021021.csv")
+    "/Users/zacharybarkley/PycharmProjects/pythonProject/WellsFargoStatements/Statements/All_Payment_Methods021321.csv")
 statement.index = pd.to_datetime(statement['Date'], format='%m/%d/%Y')
 statement['Amount'] = statement['Amount'].str.replace(',', '')
 statement['Amount'] = statement['Amount'].str.replace('$', '')
@@ -90,11 +90,14 @@ statementWeek['Ticklabels'] = [ item.strftime('%b %y') for item in statementWeek
 
 # Slicing on a given category or subcategory *should write this as function and change var names*
 def catGrab(catLevel='Master Category', spendCat='Food/Drink', interval='W', ceil=150, goal=100, start='2020-11-01',
-            end='2020-12-01', slicer=True):
+            end='2020-12-01', slicer=True, excludeColumn='Master Category', exclude=['']):
     if slicer == True:
         cat = statement.loc[lambda df: df[catLevel] == spendCat, :]
     else:
         cat = statement
+
+    mask = cat[excludeColumn].isin(exclude)
+    cat = cat[~mask]
 
     cat1 = cat.sort_index()
     cat2 = cat1.loc[start:end]
@@ -134,11 +137,11 @@ def catGrab(catLevel='Master Category', spendCat='Food/Drink', interval='W', cei
 subcategories = statement["Subcategory"].unique()
 print(subcategories)
 
-start = (dt.date.today() - dt.timedelta(weeks=52)).strftime('%m/%d/%Y')
+start = (dt.date.today() - dt.timedelta(weeks=90)).strftime('%m/%d/%Y')
 end = dt.date.today().strftime('%m/%d/%Y')
-catIntervalFood = catGrab(interval='W', start=start, end=end)
+catIntervalFood = catGrab(interval='M', start=start, end=end)
 catIntervalGas = catGrab(interval='W', catLevel='Subcategory', spendCat='Gasoline', start=start, end=end, goal=50, ceil=60)
-catIntervalSpend = catGrab(start=start, end=end, goal=850, ceil=1250, slicer=False)
+catIntervalSpend = catGrab(start=start, end=end, goal=850, ceil=1250, slicer=False, exclude=['Outgoing Transfers'])
 print(catIntervalGas)
 
 # Wells Fargo Checking Wrangling
