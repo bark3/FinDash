@@ -72,7 +72,7 @@ statement.index = pd.to_datetime(statement['Date'], format='%m/%d/%Y')
 statement['Amount'] = statement['Amount'].str.replace(',', '')
 statement['Amount'] = statement['Amount'].str.replace('$', '')
 statement.Amount = statement.Amount.astype(float)
-print(statement)
+
 
 # Import Wells Fargo Checking Report
 Checking2020 = pd.read_csv(
@@ -80,12 +80,28 @@ Checking2020 = pd.read_csv(
     names=['Date', 'Amount', 'Nothing1', 'Nothing2', 'Description'])
 Checking2020.index = pd.to_datetime(Checking2020['Date'], format='%m/%d/%Y')
 
+# Import Wells Fargo Checking Activity
+check = pd.read_csv("/Users/zacharybarkley/PycharmProjects/pythonProject/WellsFargoStatements/Checking Activity/Checking1.csv",
+                    names=['Date', 'Amount', 'Identifier', 'DELETE', 'Title'])
+check.index = pd.to_datetime(check['Date'], format='%m/%d/%Y')
+print(check.dtypes)
+
+
+
 #### Manipulate data for charting and analysis
 # Wells Fargo Spending report wrangling
 statementWeek = statement.groupby(pd.Grouper(freq='M')).sum()
 statementWeek['SMA_5'] = statementWeek.iloc[:, 0].rolling(window=5).mean()
 statementWeek['Mean'] = statementWeek.iloc[:, 0].mean()
 statementWeek['Ticklabels'] = [ item.strftime('%b %y') for item in statementWeek.index]
+
+# Wells Fargo Checking Activity
+checkInit = 173.63
+interim = check.sort_index()
+interim['Amount'] = interim['Amount'].cumsum() + checkInit
+checkBalance = interim.groupby(pd.Grouper(freq='d')).last().ffill()
+
+print(checkBalance['Amount'])
 
 
 # Slicing on a given category or subcategory *should write this as function and change var names*
@@ -142,7 +158,7 @@ end = dt.date.today().strftime('%m/%d/%Y')
 catIntervalFood = catGrab(interval='M', start=start, end=end)
 catIntervalGas = catGrab(interval='W', catLevel='Subcategory', spendCat='Gasoline', start=start, end=end, goal=50, ceil=60)
 catIntervalSpend = catGrab(start=start, end=end, goal=850, ceil=1250, slicer=False, exclude=['Outgoing Transfers'])
-print(catIntervalGas)
+
 
 # Wells Fargo Checking Wrangling
 Checking2020Income = Checking2020[Checking2020['Description'].str.contains("DFAS")]
@@ -168,6 +184,11 @@ app.layout = html.Div(children=[
     html.H1('Financials'),
 
     html.Div('Total Expended Per Week'),
+dcc.Graph(
+        id='example-graph5',
+        figure= px.line(checkBalance, y=["Amount"]),
+    ),
+
     dcc.Graph(
         id='example-graph3',
         figure= px.line(catIntervalSpend, y=["Amount", "SMA_5", "Mean", "Ceiling", "Goal"]),
@@ -195,7 +216,7 @@ if __name__ == '__main__':
 
 
 # Print net income Checking
-print(totalNetIncome)
+
 
 # Plot bi-weekly income
 # Checking2020Income.plot(y='Amount')
@@ -206,4 +227,4 @@ plt.close("all")
 
 #### Experiment
 # print(catIntervalFood)
-print(statementWeek)
+
