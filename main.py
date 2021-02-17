@@ -1,3 +1,10 @@
+# This code creates a financial dashboard to track spending, saving, and budgeting habits. Currently it only pulls from
+# a few different financial sources. This code is also heavily customized to my specific financial institutions, so a
+# decent amount of editing is required to repurpose this for your specific needs.
+
+# Additionally, there are deprecated sections that I leave inside the code in case I want to use them at some point. I
+# will designate these sections in their comment as "D!".
+
 # Import libraries
 from __future__ import print_function
 from selenium import webdriver
@@ -20,6 +27,9 @@ import plotly.express as px
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 
+# D! Passwords should not be hardcoded. I used this only in the testing phase of the automated data gathering. Since wells
+# fargo's login is pretty robust to bot entry, I don't use these two functions, but kept them in the event I wanted to
+# in the future.
 Username = ""
 PW = ""
 
@@ -27,9 +37,9 @@ username_wells = ""
 password_wells = ""
 
 
-#### Automate data gathering
+#### D!. Automate data gathering
 # UBS
-def boaselenium():
+def ubssselenium():
     browser = webdriver.Safari()
     browser.maximize_window()
     browser.get("https://onlineservices.ubs.com/olsauth/ex/pbl/ubso/dl")
@@ -43,7 +53,7 @@ def boaselenium():
     return (print("1"))
 
 
-def boaselenium2():
+def welselenium2():
     browser = webdriver.Safari()
     browser.maximize_window()
     browser.get("https://connect.secure.wellsfargo.com/auth/login/present?origin=cob&error=yes")
@@ -60,7 +70,8 @@ def boaselenium2():
 
 
 #### Read in Wells Fargo Data manually and format
-# Read Wells Fargo Spending Report CSV
+# Read Wells Fargo Spending Report CSV. This section will need to be repurposed for your own file structure and bank
+# statement(s).
 statement = pd.read_csv(
     "/Users/zacharybarkley/PycharmProjects/pythonProject/WellsFargoStatements/Statements/All_Payment_Methods021321.csv")
 statement.index = pd.to_datetime(statement['Date'], format='%m/%d/%Y')
@@ -69,7 +80,7 @@ statement['Amount'] = statement['Amount'].str.replace('$', '')
 statement.Amount = statement.Amount.astype(float)
 
 
-# Import Wells Fargo Checking Report
+#D! Import Wells Fargo Checking Report
 Checking2020 = pd.read_csv(
     "/Users/zacharybarkley/PycharmProjects/pythonProject/WellsFargoStatements/Checking/WellsFargoChecking2020.csv",
     names=['Date', 'Amount', 'Nothing1', 'Nothing2', 'Description'])
@@ -90,7 +101,8 @@ statementWeek['SMA_5'] = statementWeek.iloc[:, 0].rolling(window=5).mean()
 statementWeek['Mean'] = statementWeek.iloc[:, 0].mean()
 statementWeek['Ticklabels'] = [ item.strftime('%b %y') for item in statementWeek.index]
 
-# Wells Fargo Checking Activity
+# Wells Fargo Checking Activity. The CheckInit initializes the cumulative sum since it was the closing balance at the
+# start of my data.
 checkInit = 173.63
 interim = check.sort_index()
 interim['Amount'] = interim['Amount'].cumsum() + checkInit
@@ -99,7 +111,7 @@ checkBalance = interim.groupby(pd.Grouper(freq='d')).last().ffill()
 print(checkBalance['Amount'])
 
 
-# Slicing on a given category or subcategory *should write this as function and change var names*
+# Function to format multiple different data frames for different charts.
 def catGrab(catLevel='Master Category', spendCat='Food/Drink', interval='W', ceil=150, goal=100, start='2020-11-01',
             end='2020-12-01', slicer=True, excludeColumn='Master Category', exclude=['']):
     if slicer == True:
